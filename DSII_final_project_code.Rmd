@@ -24,13 +24,13 @@ library(httr)
 ```
 
 
-```{r}
+```{r loading hospital_2 dataset}
 # Load hospital_data_2.csv below for results of above code chunk
 hospital_data_2 <- read_csv("data/hospital_data_2.csv")
 ```
 
-
-```{r}
+#DON'T NEED TO RE-RUN THIS CHUNK, HOSPITAL_DATA_REGIONS FILE HAS BEEN CREATED
+```{r assigning states to region categories, writing to new file}
 
 hospital_data_regions <- hospital_data_2 %>%
   mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
@@ -41,24 +41,32 @@ write.csv(hospital_data_regions, "./data/hospital_data_regions.csv")
 ```
 
 
-Loading hospital_data_regions, adding numerical coding of geographic region
-```{r}
-hospital_data_regions2 <- hospital_data_regions %>% mutate(region_number = ifelse(grepl("New England", region), "1", ifelse(grepl("Middle Atlantic", region), "2", ifelse(grepl("East North Central", region), "3", ifelse(grepl("West North Central", region), "4", ifelse(grepl("South Atlantic", region), "5", ifelse(grepl("East South Central",region), "6", ifelse(grepl("West South Central", region), "7", ifelse(grepl("Mountain", region), "8",ifelse(grepl("Pacific", region), "9", ifelse(grepl("U.S. Territories", region), "10", "0"))))))))))) %>% mutate(region_number = as.numeric(region_number)) %>% mutate(hospital_type = as.factor(hospital_type)) %>% mutate(hospital_type_num = ifelse(grepl("Critical Access Hospitals", hospital_type), "1", "2")) %>% mutate(hospital_type_num = as.factor(hospital_type_num)) %>% mutate(hospital_ownership_num = ifelse(grepl("Government - Hospital District or Authority", hospital_ownership), "1", ifelse(grepl("Proprietary", hospital_ownership), "2", ifelse(grepl("Voluntary non-profit - Other", hospital_ownership), "3", ifelse(grepl("Voluntary non-profit - Private", hospital_ownership), "4", ifelse(grepl("Voluntary non-profit - Church", hospital_ownership), "5", ifelse(grepl("Government - Local", hospital_ownership), "6", ifelse(grepl("Government - State", hospital_ownership), "7", ifelse(grepl("Physician", hospital_ownership), "8", ifelse(grepl("Government - Federal", hospital_ownership), "9", ifelse(grepl("Tribal", hospital_ownership), "10", "0"))))))))))) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating))
+Loading hospital_data_regions, adding numerical coding of geographic region, 
+```{r loading hospital data regions, recoding}
+
+hospital_data_regions <- read_csv("data/hospital_data_regions.csv")
+
+#Recoding hospital_data_regions so categorical data is numeric/factor instead of text
+hospital_data_regions_numeric <- hospital_data_regions %>% mutate(region_num = ifelse(grepl("New England", region), "1", ifelse(grepl("Middle Atlantic", region), "2", ifelse(grepl("East North Central", region), "3", ifelse(grepl("West North Central", region), "4", ifelse(grepl("South Atlantic", region), "5", ifelse(grepl("East South Central",region), "6", ifelse(grepl("West South Central", region), "7", ifelse(grepl("Mountain", region), "8",ifelse(grepl("Pacific", region), "9", ifelse(grepl("U.S. Territories", region), "10", "0"))))))))))) %>% 
+  mutate(hospital_type_num = ifelse(grepl("Critical Access Hospitals", hospital_type), "1", "2")) %>%
+  mutate(hospital_ownership_num = ifelse(grepl("Government - Hospital District or Authority", hospital_ownership), "1", ifelse(grepl("Proprietary", hospital_ownership), "2", ifelse(grepl("Voluntary non-profit - Other", hospital_ownership), "3", ifelse(grepl("Voluntary non-profit - Private", hospital_ownership), "4", ifelse(grepl("Voluntary non-profit - Church", hospital_ownership), "5", ifelse(grepl("Government - Local", hospital_ownership), "6", ifelse(grepl("Government - State", hospital_ownership), "7", ifelse(grepl("Physician", hospital_ownership), "8", ifelse(grepl("Government - Federal", hospital_ownership), "9", ifelse(grepl("Tribal", hospital_ownership), "10", "0"))))))))))) %>%
+  mutate(patient_experience_num = ifelse(grepl("Not Available", patient_experience_national_comparison), "1", ifelse(grepl("Below the national average", patient_experience_national_comparison), "2", ifelse(grepl("Same as the national average", patient_experience_national_comparison), "3", ifelse(grepl("Above the national average", patient_experience_national_comparison), "4", "0"))))) %>% 
+  mutate(region_num = as.factor(region_num), hospital_type_num = as.factor(hospital_type_num), hospital_ownership_num = as.factor(hospital_ownership_num), patient_experience_num = as.factor(patient_experience_num))
 
 
 ```
  
  
 
-K-Means clustering
+K-Means clustering? 
 
 ```{r}
-#Plotting region_2 by hospital rating
+#Plotting region number by hospital ownership number, color by hospital_overall_rating (outcome)
 
-hospital_data_regions2 %>% ggplot(aes(x = region_number, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() 
+hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() 
 
 
-#Plotting 
+#Now need to apply clustering algorithm...?
 
 
 ```
