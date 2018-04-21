@@ -45,7 +45,7 @@ Loading hospital_data_regions, adding numerical coding of geographic region
 ```{r}
 
 hospital_data_regions2 <- hospital_data_regions %>% mutate(region_number = ifelse(grepl("New England", region), "1", ifelse(grepl("Middle Atlantic", region), "2", ifelse(grepl("East North Central", region), "3", ifelse(grepl("West North Central", region), "4", ifelse(grepl("South Atlantic", region), "5", ifelse(grepl("East South Central",region), "6", ifelse(grepl("West South Central", region), "7", ifelse(grepl("Mountain", region), "8",ifelse(grepl("Pacific", region), "9", ifelse(grepl("U.S. Territories", region), "10", "0"))))))))))) %>% mutate(region_number = as.numeric(region_number)) %>% mutate(hospital_type = as.factor(hospital_type)) %>% mutate(hospital_type_num = ifelse(grepl("Critical Access Hospitals", hospital_type), "1", "2")) %>% mutate(hospital_type_num = as.factor(hospital_type_num)) %>% mutate(hospital_ownership_num = ifelse(grepl("Government - Hospital District or Authority", hospital_ownership), "1", ifelse(grepl("Proprietary", hospital_ownership), "2", ifelse(grepl("Voluntary non-profit - Other", hospital_ownership), "3", ifelse(grepl("Voluntary non-profit - Private", hospital_ownership), "4", ifelse(grepl("Voluntary non-profit - Church", hospital_ownership), "5", ifelse(grepl("Government - Local", hospital_ownership), "6", ifelse(grepl("Government - State", hospital_ownership), "7", ifelse(grepl("Physician", hospital_ownership), "8", ifelse(grepl("Government - Federal", hospital_ownership), "9", ifelse(grepl("Tribal", hospital_ownership), "10", "0"))))))))))) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating))
-                                                                                                         levels(hospital_data_regions2$hospital_ownership)                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                         levels(hospital_data_regions2$hospital_ownership)                                                                                                                                                                                                                                                                                           Should also change patient score numbers?                                                                                                                                                                
 ```
  
  
@@ -59,6 +59,7 @@ hospital_data_regions2 %>% ggplot(aes(x = region_number, y = hospital_ownership_
 
 
 #Plotting 
+
 
 ```
 
