@@ -68,6 +68,5 @@ hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hos
 
 #Now need to apply clustering algorithm...?
 
-
 ```
 
