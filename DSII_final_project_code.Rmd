@@ -41,7 +41,7 @@ write.csv(hospital_data_regions, "./data/hospital_data_regions.csv")
 ```
 
 
-Loading hospital_data_regions, adding numerical coding of geographic region, 
+Loading hospital_data_regions, adding numerical coding of geographic region, hospital type, hospital_ownership, patient experience, and hospital overall rating
 ```{r loading hospital data regions, recoding}
 
 hospital_data_regions <- read_csv("data/hospital_data_regions.csv")
@@ -51,35 +51,46 @@ hospital_data_regions_numeric <- hospital_data_regions %>% mutate(region_num = i
   mutate(hospital_type_num = ifelse(grepl("Critical Access Hospitals", hospital_type), "1", "2")) %>%
   mutate(hospital_ownership_num = ifelse(grepl("Government - Hospital District or Authority", hospital_ownership), "1", ifelse(grepl("Proprietary", hospital_ownership), "2", ifelse(grepl("Voluntary non-profit - Other", hospital_ownership), "3", ifelse(grepl("Voluntary non-profit - Private", hospital_ownership), "4", ifelse(grepl("Voluntary non-profit - Church", hospital_ownership), "5", ifelse(grepl("Government - Local", hospital_ownership), "6", ifelse(grepl("Government - State", hospital_ownership), "7", ifelse(grepl("Physician", hospital_ownership), "8", ifelse(grepl("Government - Federal", hospital_ownership), "9", ifelse(grepl("Tribal", hospital_ownership), "10", "0"))))))))))) %>%
   mutate(patient_experience_num = ifelse(grepl("Not Available", patient_experience_national_comparison), "1", ifelse(grepl("Below the national average", patient_experience_national_comparison), "2", ifelse(grepl("Same as the national average", patient_experience_national_comparison), "3", ifelse(grepl("Above the national average", patient_experience_national_comparison), "4", "0"))))) %>% 
-  mutate(region_num = as.factor(region_num), hospital_type_num = as.factor(hospital_type_num), hospital_ownership_num = as.factor(hospital_ownership_num), patient_experience_num = as.factor(patient_experience_num)) %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating))
-
+  mutate(region_num = as.factor(region_num), hospital_type_num = as.factor(hospital_type_num), hospital_ownership_num = as.factor(hospital_ownership_num), patient_experience_num = as.factor(patient_experience_num))
 
 ```
  
  
 
-K-Means clustering? 
+#UNSUPERVISED LEARNING AND EXPLORATORY DATA ANALYSIS
 
+Exploratory data analysis ...
+
+
+
+
+
+
+
+
+K-Means Clustering
 ```{r}
-#Plotting region number by hospital ownership number, color by hospital_overall_rating (outcome)
+#Plotting region number by hospital ownership number, color by hospital_overall_rating
 
-hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() 
+hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() + labs(title = "Plotting region number by hospital ownership number")
+
+##NOTE: Current plot axes aren't in order. Is this plot even necessary? 
 
 
-#Now need to apply clustering algorithm...?
+#Now need to apply clustering algorithm
 km_hospitals_train <- hospitals_train %>% select(region_num, hospital_type_num, hospital_ownership_num, patient_experience_num, hospital_overall_rating)
 km_hospitals <- kmeans(hospitals_train, 5, nstart = 20)
 km_hospitals_cluster <- km_hospitals$cluster
 
-#Plotting clusters?
-plot(km_hospitals_train, col = (km_hospitals$cluster + 1))
+#Plotting clusters
+plot(km_hospitals_train, col = (km_hospitals$cluster + 1)) + title("K Means clustering")
 
 
 ```
 
 
 
-
+##SUPERVISED LEARNING
 
 
 #Creating training and test sets--training 70% of data set, test set remaining dataset
@@ -100,23 +111,23 @@ hospitals_test <- hospital_data_regions_numeric[-train,]
 library(tree)
 
 #Creating regression tree
-hospital_tree <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num + patient_experience_num, data = hospitals_train)
+hospital_tree_all <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num + patient_experience_num, data = hospitals_train)
 
-plot(hospital_tree)
-text(hospital_tree, pretty = 0)
+plot(hospital_tree_all)
+text(hospital_tree_all, pretty = 0)
 
 ```
 
-Cross-validation
+Cross-validation of tree
 ```{r cross-validation of the tree}
-cv_hospital_tree <- cv.tree(hospital_tree)
+cv_hospital_tree_all <- cv.tree(hospital_tree_all)
 
-plot(cv_hospital_tree)
-text(cv_hospital_tree)
+plot(cv_hospital_tree_all)
+text(cv_hospital_tree_all)
 
-prune_hospital_train <- prune.tree(hospital_tree, best = 2)
-plot(prune_hospital_train)
-text(prune_hospital_train, pretty = 0)
+prune_hospital_train_all <- prune.tree(hospital_tree_all, best = 2)
+plot(prune_hospital_train_all)
+text(prune_hospital_train_all, pretty = 0)
 
 
 ```
@@ -124,9 +135,9 @@ text(prune_hospital_train, pretty = 0)
 
 Test set tree
 ```{r}
-hospital_test_tree <- predict(hospital_tree, newdata = hospitals_test)
+hospital_test_tree_all <- predict(hospital_tree_all, newdata = hospitals_test)
 
-test_MSE <- mean((hospital_test_tree - hospitals_test$hospital_overall_rating)^2)
+test_MSE <- mean((hospital_test_tree_all - hospitals_test$hospital_overall_rating)^2)
 
 test_MSE
 
@@ -134,19 +145,46 @@ test_MSE
 
 
 
-#Version 2--no patient experience
+#REGRESSION TREE, removing patient rating as variable
 
 ```{r}
 library(tree)
 
 #Creating regression tree
-hospital_tree2 <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num , data = hospitals_train)
+hospital_tree_no_patient <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num , data = hospitals_train)
 
-plot(hospital_tree2)
-text(hospital_tree2, pretty = 0)
+plot(hospital_tree_no_patient)
+text(hospital_tree_no_patient, pretty = 0)
 
 ```
 
+Cross-validation of this tree
+```{r cross-validation of the tree}
+cv_hospital_tree_no_patient <- cv.tree(hospital_tree_no_patient)
+
+plot(cv_hospital_tree_no_patient)
+text(cv_hospital_tree_no_patient)
+
+prune_hospital_train_no_patient <- prune.tree(hospital_tree_no_patient, best = 2)
+plot(prune_hospital_train_no_patient)
+text(prune_hospital_train_no_patient, pretty = 0)
+
+
+```
+
+
+Test set tree--no patient variable
+```{r}
+hospital_test_tree_no_patient <- predict(hospital_tree_no_patient, newdata = hospitals_test)
+
+test_MSE <- mean((hospital_test_tree_no_patient - hospitals_test$hospital_overall_rating)^2)
+
+test_MSE
+
+```
+
+
+Test MSE is higher than for original tree--should we even include this in our analysis? 
 
 
 #RandomForest
