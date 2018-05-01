@@ -61,7 +61,60 @@ hospital_data_regions_numeric <- hospital_data_regions %>% mutate(region_num = i
 
 Exploratory data analysis ...
 
+*About the dataset*
 
+The main dataset that we chose to analyze was the [Hospital General Information](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/data) dataset, which is published by the Centers for Medicare & Medicaid Services and contains information about all hospitals in the United States (and U.S. Territories) that have been registered with Medicare. According to the Medicare [website](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/about), this dataset was created in May 2014 and was last updated in October 2017. We downloaded the dataset as a csv file from [Data.Medicare.gov](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/data) by clicking on the "Export" tab and selecting the CSV option from the Download section, which allowed us to download a copy of the dataset in a static format. 
+
+[Hospital Compare](https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments/hospitalqualityinits/hospitalcompare.html) is a program that was created in 2002 to provides "information on how well hospitals provide recommended care to their patients," based on a variety of measures including patient experiences, readmissions & death rates, payment & value of care. In 2016, "Overall Hospital Quality Star Rating" was added to the Hospital Compare metrics. More information about hospital ratings methodology can be found [here](https://www.qualitynet.org/dcs/ContentServer?c=Page&pagename=QnetPublic%2FPage%2FQnetTier3&cid=1228775957165) and [here](http://www.hcahpsonline.org/Files/October_2017_Star%20Ratings_Tech%20Notes.pdf). 
+
+```{r}
+# hospital rating based on hospital type (boxplot)
+
+hospital_data_regions_numeric %>% 
+   mutate(hospital_type = fct_reorder(hospital_type, hospital_overall_rating)) %>%
+ggplot(aes(x = hospital_type, y = hospital_overall_rating, group = hospital_type)) + geom_boxplot(aes(color = hospital_type)) + labs(title = "Distribution of Hospital Rating Based on Hospital Type", x = "Hospital Type", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5))
+
+
+# hospital rating based on ownership (boxplot)
+hospital_data_regions_numeric %>% 
+   mutate(hospital_ownership = fct_reorder(hospital_ownership, hospital_overall_rating)) %>%
+ggplot(aes(x = hospital_ownership, y = hospital_overall_rating, group = hospital_ownership)) + geom_boxplot(aes(color = hospital_ownership)) + labs(title = "Distribution of Hospital Rating Based on Hospital Ownership", x = "Hospital Ownership", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "none")
+
+
+# hospital rating distribution (barplot)
+hospital_data_regions_numeric %>% 
+  mutate(hospital_overall_rating = as.character(hospital_overall_rating)) %>%
+  count(hospital_overall_rating) %>% 
+  mutate(hospital_overall_rating = fct_reorder(hospital_overall_rating, n)) %>% 
+  plot_ly(x = ~hospital_overall_rating, y = ~n, color = ~hospital_overall_rating, type = "bar", colors = "Set2") %>%
+   layout(legend = list(x = 100, y = 0.5)) %>%
+    layout(
+    title = "Distribution of Hospital Rating") %>%
+    layout(yaxis = list(title = 'Total number of Hospitals')) %>%
+    layout(xaxis = list(title = 'Hospital Rating'))
+
+
+
+
+# hospital rating and Patient Experience Level (Scatter plot)
+scatter_patient = hospital_data_2 %>%
+  filter(!(patient_experience_national_comparison == "Not Available")) %>%
+  ggplot(aes(x = patient_experience_national_comparison, y = hospital_overall_rating, color = hospital_overall_rating)) +
+  geom_point(alpha = 0.25) +
+  scale_color_viridis() +
+  coord_cartesian() + labs(title = "Hospital Rating and Patient Experience level", x = "Patient Experience Level", y = "Hospital Rating") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "none")
+
+ggplotly(scatter_patient)
+
+
+#Geographic distribution of patient scores
+
+hospital_data_regions_numeric %>% ggplot(aes(x = hospital_overall_rating)) + geom_histogram() + facet_wrap(~region)
+```
 
 
 
