@@ -129,21 +129,16 @@ hospitals_test <- hospital_data_regions_numeric[-train,]
 ```
 
 
-#K-Means Clustering
 
-First, we plotted region number (coded 1-10 for the 10 geographic regions in the United States) by hospital ownership number (coded 1-10 for the 10 different owernship types), and color-coded by hospital overall rating (our main outcome of interest) to see if there were any obvious clustering patterns before applying the K-means clustering algorithm. There are a high number of hospitals with 3 and 4 ratings; otherwise there does not seem to be a clear clustering pattern. 
+
+K-Means Clustering
 ```{r}
 #Plotting region number by hospital ownership number, color by hospital_overall_rating
 
-hospital_data_regions_numeric$region_num  = factor(hospital_data_regions_numeric$region_num, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"))
+hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() + labs(title = "Plotting region number by hospital ownership number")
 
+##NOTE: Current plot axes aren't in order. Is this plot even necessary? 
 
-hospital_data_regions_numeric %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num), hospital_overall_rating = as.factor(hospital_overall_rating)) %>% mutate(hospital_ownership_num = forcats::fct_inorder(hospital_ownership_num)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() + labs(title = "Plotting region number by hospital ownership number")
-```
-
-
-Next we applied a K-Means clustering algorithm--we tested 5 different clusters, since there are 5 possible hospital overall ratings in this dataset. 
-```{r}
 
 #Now need to apply clustering algorithm
 km_hospitals_train <- hospitals_train %>% select(region_num, hospital_type_num, hospital_ownership_num, patient_experience_num, hospital_overall_rating)
