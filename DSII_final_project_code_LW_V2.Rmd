@@ -1,0 +1,265 @@
+---
+title: "DSII_final_data"
+author: "Carolina Downie"
+date: "4/21/2018"
+output:
+  html_document: default
+---
+
+```{r, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+library(ggridges)
+library(ggthemes)
+library(forcats)
+library(viridis)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(shiny)
+library(rvest)
+library(httr)
+```
+
+
+```{r loading hospital_2 dataset}
+# Load hospital_data_2.csv below for results of above code chunk
+hospital_data_2 <- read_csv("data/hospital_data_2.csv")
+```
+
+#DON'T NEED TO RE-RUN THIS CHUNK, HOSPITAL_DATA_REGIONS FILE HAS BEEN CREATED
+```{r assigning states to region categories, writing to new file}
+
+hospital_data_regions <- hospital_data_2 %>%
+  mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
+  
+
+write.csv(hospital_data_regions, "./data/hospital_data_regions.csv")
+
+```
+
+
+Loading hospital_data_regions, adding numerical coding of geographic region, hospital type, hospital_ownership, patient experience, and hospital overall rating
+```{r loading hospital data regions, recoding}
+
+hospital_data_regions <- read_csv("data/hospital_data_regions.csv")
+
+#Recoding hospital_data_regions so categorical data is numeric/factor instead of text
+hospital_data_regions_numeric <- hospital_data_regions %>% mutate(region_num = ifelse(grepl("New England", region), "1", ifelse(grepl("Middle Atlantic", region), "2", ifelse(grepl("East North Central", region), "3", ifelse(grepl("West North Central", region), "4", ifelse(grepl("South Atlantic", region), "5", ifelse(grepl("East South Central",region), "6", ifelse(grepl("West South Central", region), "7", ifelse(grepl("Mountain", region), "8",ifelse(grepl("Pacific", region), "9", ifelse(grepl("U.S. Territories", region), "10", "0"))))))))))) %>% 
+  mutate(hospital_type_num = ifelse(grepl("Critical Access Hospitals", hospital_type), "1", "2")) %>%
+  mutate(hospital_ownership_num = ifelse(grepl("Government - Hospital District or Authority", hospital_ownership), "1", ifelse(grepl("Proprietary", hospital_ownership), "2", ifelse(grepl("Voluntary non-profit - Other", hospital_ownership), "3", ifelse(grepl("Voluntary non-profit - Private", hospital_ownership), "4", ifelse(grepl("Voluntary non-profit - Church", hospital_ownership), "5", ifelse(grepl("Government - Local", hospital_ownership), "6", ifelse(grepl("Government - State", hospital_ownership), "7", ifelse(grepl("Physician", hospital_ownership), "8", ifelse(grepl("Government - Federal", hospital_ownership), "9", ifelse(grepl("Tribal", hospital_ownership), "10", "0"))))))))))) %>%
+  mutate(patient_experience_num = ifelse(grepl("Not Available", patient_experience_national_comparison), "1", ifelse(grepl("Below the national average", patient_experience_national_comparison), "2", ifelse(grepl("Same as the national average", patient_experience_national_comparison), "3", ifelse(grepl("Above the national average", patient_experience_national_comparison), "4", "0"))))) %>% 
+  mutate(region_num = as.factor(region_num), hospital_type_num = as.factor(hospital_type_num), hospital_ownership_num = as.factor(hospital_ownership_num), patient_experience_num = as.factor(patient_experience_num))
+
+```
+ 
+ 
+
+#UNSUPERVISED LEARNING AND EXPLORATORY DATA ANALYSIS
+
+Exploratory data analysis ...
+
+*About the dataset*
+
+The main dataset that we chose to analyze was the [Hospital General Information](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/data) dataset, which is published by the Centers for Medicare & Medicaid Services and contains information about all hospitals in the United States (and U.S. Territories) that have been registered with Medicare. According to the Medicare [website](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/about), this dataset was created in May 2014 and was last updated in October 2017. We downloaded the dataset as a csv file from [Data.Medicare.gov](https://data.medicare.gov/Hospital-Compare/Hospital-General-Information/xubh-q36u/data) by clicking on the "Export" tab and selecting the CSV option from the Download section, which allowed us to download a copy of the dataset in a static format. 
+
+[Hospital Compare](https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments/hospitalqualityinits/hospitalcompare.html) is a program that was created in 2002 to provides "information on how well hospitals provide recommended care to their patients," based on a variety of measures including patient experiences, readmissions & death rates, payment & value of care. In 2016, "Overall Hospital Quality Star Rating" was added to the Hospital Compare metrics. More information about hospital ratings methodology can be found [here](https://www.qualitynet.org/dcs/ContentServer?c=Page&pagename=QnetPublic%2FPage%2FQnetTier3&cid=1228775957165) and [here](http://www.hcahpsonline.org/Files/October_2017_Star%20Ratings_Tech%20Notes.pdf). 
+
+```{r}
+# hospital rating based on hospital type (boxplot)
+
+hospital_data_regions_numeric %>% 
+   mutate(hospital_type = fct_reorder(hospital_type, hospital_overall_rating)) %>%
+ggplot(aes(x = hospital_type, y = hospital_overall_rating, group = hospital_type)) + geom_boxplot(aes(color = hospital_type)) + labs(title = "Distribution of Hospital Rating Based on Hospital Type", x = "Hospital Type", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5))
+
+
+# hospital rating based on ownership (boxplot)
+hospital_data_regions_numeric %>% 
+   mutate(hospital_ownership = fct_reorder(hospital_ownership, hospital_overall_rating)) %>%
+ggplot(aes(x = hospital_ownership, y = hospital_overall_rating, group = hospital_ownership)) + geom_boxplot(aes(color = hospital_ownership)) + labs(title = "Distribution of Hospital Rating Based on Hospital Ownership", x = "Hospital Ownership", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "none")
+
+
+# hospital rating distribution (barplot)
+hospital_data_regions_numeric %>% 
+  mutate(hospital_overall_rating = as.character(hospital_overall_rating)) %>%
+  count(hospital_overall_rating) %>% 
+  mutate(hospital_overall_rating = fct_reorder(hospital_overall_rating, n)) %>% 
+  plot_ly(x = ~hospital_overall_rating, y = ~n, color = ~hospital_overall_rating, type = "bar", colors = "Set2") %>%
+   layout(legend = list(x = 100, y = 0.5)) %>%
+    layout(
+    title = "Distribution of Hospital Rating") %>%
+    layout(yaxis = list(title = 'Total number of Hospitals')) %>%
+    layout(xaxis = list(title = 'Hospital Rating'))
+
+
+
+
+# hospital rating and Patient Experience Level (Scatter plot)
+scatter_patient = hospital_data_2 %>%
+  filter(!(patient_experience_national_comparison == "Not Available")) %>%
+  ggplot(aes(x = patient_experience_national_comparison, y = hospital_overall_rating, color = hospital_overall_rating)) +
+  geom_point(alpha = 0.25) +
+  scale_color_viridis() +
+  coord_cartesian() + labs(title = "Hospital Rating and Patient Experience level", x = "Patient Experience Level", y = "Hospital Rating") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "none")
+
+ggplotly(scatter_patient)
+
+
+#Geographic distribution of patient scores
+
+hospital_data_regions_numeric %>% ggplot(aes(x = hospital_overall_rating)) + geom_histogram() + facet_wrap(~region)
+```
+
+#Creating training and test sets--training 70% of data set, test set remaining dataset
+```{r}
+set.seed(5)
+train <- sample(1:nrow(hospital_data_regions_numeric), 2489)
+
+hospitals_train <- hospital_data_regions_numeric[train,]
+
+hospitals_test <- hospital_data_regions_numeric[-train,]
+
+```
+
+
+
+
+K-Means Clustering
+```{r}
+#Plotting region number by hospital ownership number, color by hospital_overall_rating
+
+hospital_data_regions_numeric %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>% mutate(hospital_ownership_num = as.factor(hospital_ownership_num)) %>% ggplot(aes(x = region_num, y = hospital_ownership_num, color = hospital_overall_rating)) + geom_point() + labs(title = "Plotting region number by hospital ownership number")
+
+##NOTE: Current plot axes aren't in order. Is this plot even necessary? 
+
+
+#Now need to apply clustering algorithm
+km_hospitals_train <- hospitals_train %>% select(region_num, hospital_type_num, hospital_ownership_num, patient_experience_num, hospital_overall_rating)
+km_hospitals <- kmeans(km_hospitals_train, 5, nstart = 20)
+km_hospitals_cluster <- km_hospitals$cluster
+
+#Plotting clusters
+plot(km_hospitals_train, col = (km_hospitals$cluster + 1)) + title("K Means clustering")
+
+
+```
+
+
+
+##SUPERVISED LEARNING
+
+
+#Creating REGRESSION TREE
+```{r}
+library(tree)
+
+#Creating regression tree
+hospital_tree_all <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num + patient_experience_num, data = hospitals_train)
+
+plot(hospital_tree_all)
+text(hospital_tree_all, pretty = 0)
+
+#training MSE
+mean((resid(hospital_tree_all))^2)
+
+```
+
+Cross-validation of tree
+```{r cross-validation of the tree}
+cv_hospital_tree_all <- cv.tree(hospital_tree_all)
+
+plot(cv_hospital_tree_all)
+
+prune_hospital_train_all <- prune.tree(hospital_tree_all, best = 3)
+plot(prune_hospital_train_all)
+text(prune_hospital_train_all, pretty = 0)
+
+
+```
+
+
+Test set tree
+```{r}
+hospital_test_tree_all <- predict(hospital_tree_all, newdata = hospitals_test)
+
+test_MSE <- mean((hospital_test_tree_all - hospitals_test$hospital_overall_rating)^2)
+
+test_MSE
+
+```
+
+
+
+#REGRESSION TREE, removing patient rating as variable
+
+```{r}
+library(tree)
+
+#Creating regression tree
+hospital_tree_no_patient <- tree(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num , data = hospitals_train)
+
+plot(hospital_tree_no_patient)
+text(hospital_tree_no_patient, pretty = 0)
+
+#training MSE
+mean((resid(hospital_tree_no_patient))^2)
+
+```
+
+Cross-validation of this tree
+```{r cross-validation of tree}
+cv_hospital_tree_no_patient <- cv.tree(hospital_tree_no_patient)
+
+plot(cv_hospital_tree_no_patient)
+
+prune_hospital_train_no_patient <- prune.tree(hospital_tree_no_patient, best = 4)
+plot(prune_hospital_train_no_patient)
+text(prune_hospital_train_no_patient, pretty = 0)
+
+
+```
+
+
+Test set tree--no patient variable
+```{r}
+hospital_test_tree_no_patient <- predict(hospital_tree_no_patient, newdata = hospitals_test)
+
+test_MSE <- mean((hospital_test_tree_no_patient - hospitals_test$hospital_overall_rating)^2)
+
+test_MSE
+
+```
+
+
+Test MSE is higher than for original tree--should we even include this in our analysis? 
+
+
+#RandomForest
+```{r}
+library(randomForest)
+rf_hospitals <- randomForest(hospital_overall_rating ~ region_num + hospital_type_num + hospital_ownership_num + patient_experience_num , data = hospitals_train, importance = TRUE)
+
+pred_rf_hospitals_test <- predict(rf_hospitals, newdata = hospitals_test)
+
+varImpPlot(rf_hospitals)
+
+rf_test_error <- mean((pred_rf_hospitals_test - hospitals_test$hospital_overall_rating)^2)
+
+rf_test_error
+```
+
+
+We built a regression tree using the predictor variables region, hospital type, hospital ownership, and patient experience with hospital overall rating as the outcome. We chose to use tree-based methods because our data only had four dimensions, so it would not have been efficient to use a dimension reduction method. Additionally, our overall goal was interpretation, making tree-based methods ideal compared to other methods like KNN. There are few assumptions for regression trees aside from normality of the outcome, making it preferable to linear regression.
+
+When we initially ran the regression tree, it produced a tree with 3 terminal nodes and patient experience rating as the only predictor. After using cross validation to select the ideal number of nodes, we found that three terminal nodes had the smallest deviance. This indicated that pruning the tree would not improve the model performance. If hospitals had a patient experience rating below the national average, their overall hospital ratings were the lowest on average (2.418). Hospitals with patient experience ratings above the national average had the highest overall ratings (3.686), while hospitals with patient experience ratings that were not available or the same as the national average had similar overall ratings (3.084). This is consistent with what we would expect, hospitals with the best patient experience would have the highest overall ratings, while those with patient experience below the national average would have lower overall ratings, with hospitals the same as the national average performing somewhere in the middle. This tree model had a training MSE of 0.4175 and a test MSE of 0.4318.
+
+To see the influence of other predictors on the outcome we repeated the regression tree procedure after excluding the patient experience rating variable. This produced a tree with 4 terminal nodes with region as the most important predictor followed by hospital ownership. Cross validation found that 4 terminal nodes had the smallest deviance, indicating that pruning the tree would not improve the model performance. Hospitals in the following regions: US Territories, Middle Atlantic, South Atlantic, East South Central, and Pacific had lower overall ratings compared to those in other regions: New England, East North Central, West North Central, West South Central, and Mountain. Of hospitals in lower rated regions, if their hospital ownership was proprietary or government (state, local, or federal), their overall rating was lower compared to hospitals with different ownership (2.657 vs 2.942). Of hospitals in higher rated regions, hospitals with ownership that was proprietary, physician, voluntary non-profit (private, church or other), or local government had higher overall ratings compared to those with different ownership (3.318 vs 3.045). It appears that privately run hospitals in the central regions of the United States had the highest ratings relative to public hospitals in coastal regions. While the geographic component is somewhat unexpected given that most major cities in the US, with large hospitals, are in coastal regions, but the impact of private ownership on higher overall ratings is consistent with what we would expect. The training MSE for this new tree excluding patient experience was 0.6082 and the test MSE was 0.6067, both were higher than the MSE when we included patient experience. This lends support to our original conclusion that patient experience is the most important predictor as was indicated in our first regression tree.
+
+To further support our decision to use the regression tree where patient experience was the only relevant predictor, we used random forest to determine which of the four predictors were most important. After running a random forest model and plotting the importance of each of the four predictors, patient experience rating was the most important predictor. Therefore, we believe our initial regression tree is the most valid and accurate way of modeling the outcome overall hospital rating.
