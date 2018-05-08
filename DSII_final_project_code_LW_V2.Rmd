@@ -1,7 +1,7 @@
 ---
 title: "DSII_final_project"
 author: "Carolina Downie, Lauren Wilson, Nick Pantaleo"
-date: "4/21/2018"
+date: "5/8/2018"
 output:
   html_document: default
 ---
@@ -67,6 +67,8 @@ The main dataset that we chose to analyze was the [Hospital General Information]
 
 [Hospital Compare](https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments/hospitalqualityinits/hospitalcompare.html) is a program that was created in 2002 to provides "information on how well hospitals provide recommended care to their patients," based on a variety of measures including patient experiences, readmissions & death rates, payment & value of care. In 2016, "Overall Hospital Quality Star Rating" was added to the Hospital Compare metrics. More information about hospital ratings methodology can be found [here](https://www.qualitynet.org/dcs/ContentServer?c=Page&pagename=QnetPublic%2FPage%2FQnetTier3&cid=1228775957165) and [here](http://www.hcahpsonline.org/Files/October_2017_Star%20Ratings_Tech%20Notes.pdf). 
 
+In order to use this dataset with K-means clustering and regression models, we assigned arbitrary numbers to the categorical variables with character outcomes. For example, for the 10 geographic regions, we assigned values 1-10, for the 10 hospital ownership types, we assigned values 1-10, for the 2 different hospital types we assigned values 1-2, and for the 3 patient experience options we assigned the values 1-3. 
+
 ```{r}
 # hospital rating based on hospital type (boxplot)
 
@@ -74,14 +76,22 @@ hospital_data_regions_numeric %>%
    mutate(hospital_type = fct_reorder(hospital_type, hospital_overall_rating)) %>%
 ggplot(aes(x = hospital_type, y = hospital_overall_rating, group = hospital_type)) + geom_boxplot(aes(color = hospital_type)) + labs(title = "Distribution of Hospital Rating Based on Hospital Type", x = "Hospital Type", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5))
 
+```
 
+This plot shows that both Acute Care and Critical Access Hospitals have a mean hospital rating of 3, and a distribution between 1 and 5. 
+
+```{r}
 # hospital rating based on ownership (boxplot)
 hospital_data_regions_numeric %>% 
    mutate(hospital_ownership = fct_reorder(hospital_ownership, hospital_overall_rating)) %>%
 ggplot(aes(x = hospital_ownership, y = hospital_overall_rating, group = hospital_ownership)) + geom_boxplot(aes(color = hospital_ownership)) + labs(title = "Distribution of Hospital Rating Based on Hospital Ownership", x = "Hospital Ownership", y = "Hospital Rating") + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme(axis.text.x = element_text(hjust = 1), plot.title = element_text(hjust = 0.5)) +
   theme(legend.position = "none")
 
+```
 
+This plot suggests that there is some variation in hospital rating based on hospital ownership. 
+
+```{r}
 # hospital rating distribution (barplot)
 hospital_data_regions_numeric %>% 
   mutate(hospital_overall_rating = as.character(hospital_overall_rating)) %>%
@@ -94,17 +104,27 @@ hospital_data_regions_numeric %>%
     layout(yaxis = list(title = 'Total number of Hospitals')) %>%
     layout(xaxis = list(title = 'Hospital Rating'))
 
+```
 
+This plot shows that the most common hospital rating across all hospitals is a 3. 
 
-
+```{r}
 # hospital rating and Patient Experience Level (Histogram)
 hospital_data_2 %>% filter(!(patient_experience_national_comparison == "Not Available")) %>% ggplot(aes(x = hospital_overall_rating)) + geom_histogram(binwidth = 0.5) + facet_wrap(~patient_experience_national_comparison)
 
+```
 
+This plot shows that hospital rating distributions vary a little bit depending on whether they had above, below, or same as the national average for patient ratings, with those below the national average having more 2s and 3s. 
+
+
+```{r}
 #Geographic distribution of patient scores
 
 hospital_data_regions_numeric %>% ggplot(aes(x = hospital_overall_rating)) + geom_histogram() + facet_wrap(~region)
 ```
+
+This plot shows the distribution of hospital ratings across geographic regions. There are some geographic trends, with East North Central having the most 3s and 4s, and South Atlantic and West South Central having a lot of 3s. 
+
 
 *Creating training and test sets--training 70% of data set, test set remaining dataset*
 ```{r}
@@ -117,7 +137,7 @@ hospitals_test <- hospital_data_regions_numeric[-train,]
 
 ```
 
-
+Based on these results, there do not seem to be any clear patterns with respect to the variables: geographic region, hospital ownership type, hospital type, patient experience, and hospital overall rating--there are predominately hospitals with a 3 rating, and they come from a variety of locations and hospital types and ownership types. 
 
 
 *K-Means Clustering*
