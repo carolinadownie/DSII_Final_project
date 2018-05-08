@@ -1,6 +1,6 @@
 ---
-title: "DSII_final_data"
-author: "Carolina Downie"
+title: "DSII_final_project"
+author: "Carolina Downie, Lauren Wilson, Nick Pantaleo"
 date: "4/21/2018"
 output:
   html_document: default
@@ -97,18 +97,8 @@ hospital_data_regions_numeric %>%
 
 
 
-# hospital rating and Patient Experience Level (Scatter plot)
-scatter_patient = hospital_data_2 %>%
-  filter(!(patient_experience_national_comparison == "Not Available")) %>%
-  ggplot(aes(x = patient_experience_national_comparison, y = hospital_overall_rating, color = hospital_overall_rating)) +
-  geom_point(alpha = 0.25) +
-  scale_color_viridis() +
-  coord_cartesian() + labs(title = "Hospital Rating and Patient Experience level", x = "Patient Experience Level", y = "Hospital Rating") +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1),
-        legend.position = "none")
-
-ggplotly(scatter_patient)
+# hospital rating and Patient Experience Level (Histogram)
+hospital_data_2 %>% filter(!(patient_experience_national_comparison == "Not Available")) %>% ggplot(aes(x = hospital_overall_rating)) + geom_histogram(binwidth = 0.5) + facet_wrap(~patient_experience_national_comparison)
 
 
 #Geographic distribution of patient scores
@@ -243,7 +233,7 @@ test_MSE
 ```
 
 
-Test MSE is higher than for original tree--should we even include this in our analysis? 
+Test MSE is higher than for original tree 
 
 
 #RandomForest
